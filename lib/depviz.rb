@@ -4,6 +4,7 @@
 
 require 'logger'
 require 'pxgraphviz'
+require 'xml_to_sliml'
 require 'dependency_builder'
 
 
@@ -29,6 +30,19 @@ class DepViz
       
     end
     
+    def reverse_dependencies()
+
+      a = LineTree.new(@s, root: @root).to_doc.root.xpath('//' + @name)
+      
+      s = a.select {|x| x.has_elements? }\
+          .map{|x| XmlToSliml.new(x).to_s }.join("\n")
+      
+      dv3 = DepViz.new(root: nil)
+      dv3.read s
+      dv3
+      
+    end    
+    
   end  
 
   def initialize(s='', root: 'platform', style: default_stylesheet())
@@ -43,7 +57,8 @@ type: digraph
     return if s.empty?
     
     @s = tree = DependencyBuilder.new(s).to_s    
-    s = root + "\n" + tree.lines.map {|x| '  ' + x}.join
+    
+    s = root ? (root + "\n" + tree.lines.map {|x| '  ' + x}.join) : tree
 
     @pxg = PxGraphViz.new(@header + s, style: style)
 
@@ -58,8 +73,9 @@ type: digraph
   def read(s)
     
     @s = s
-    s2 = @root + "\n" + s.lines.map {|x| '  ' + x}.join
+    s2 = @root ? @root + "\n" + s.lines.map {|x| '  ' + x}.join : s
     @pxg = PxGraphViz.new(@header + s2, style: @style)
+    
   end
 
   def to_s()
@@ -71,7 +87,6 @@ type: digraph
   end
 
   def to_xml()
-    #@pxg.doc.xml(pretty: true)
     LineTree.new(@s, root: @root).to_xml
   end
 
