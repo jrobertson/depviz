@@ -8,26 +8,71 @@ require 'dependency_builder'
 
 
 class DepViz
+  
+  class Item
+    
+    def initialize(s, root: nil, name: name)
+      @s, @root, @name = s, root, name
+    end
+    
+    def dependencies()
+      
+      a = LineTree.new(@s, root: @root).to_doc.root.xpath('//' + @name)
+      
+      s = a.map {|x| x.backtrack.to_s.split('/')[1..-1]}\
+          .map {|x| x.map.with_index {|y,i| '  ' * i + y }.join("\n")}\
+          .join("\n")
+      
+      dv3 = DepViz.new()
+      dv3.read s
+      dv3
+      
+    end
+    
+  end  
 
-  def initialize(s, root: 'platform', style: default_stylesheet())
-
-    header = "
+  def initialize(s='', root: 'platform', style: default_stylesheet())
+    
+    @style, @root = style, root
+    @header = "
 <?polyrex schema='items[type]/item[label]' delimiter =' # '?>
 type: digraph
 
     "
-    tree = DependencyBuilder.new(s).to_s
-    s2 = root + "\n" + tree.lines.map {|x| '  ' + x}.join
-    @pxg = PxGraphViz.new(header + s2, style: style)
+    
+    return if s.empty?
+    
+    @s = tree = DependencyBuilder.new(s).to_s    
+    s = root + "\n" + tree.lines.map {|x| '  ' + x}.join
+
+    @pxg = PxGraphViz.new(@header + s, style: style)
 
   end
+  
+  def item(name)
+    
+    Item.new @s, root: @root, name: name
+    
+  end
+  
+  def read(s)
+    
+    @s = s
+    s2 = @root + "\n" + s.lines.map {|x| '  ' + x}.join
+    @pxg = PxGraphViz.new(@header + s2, style: @style)
+  end
 
+  def to_s()
+    @s
+  end
+  
   def to_svg()
     @pxg.to_svg
   end
 
   def to_xml()
-    @pxg.doc.xml(pretty: true)
+    #@pxg.doc.xml(pretty: true)
+    LineTree.new(@s, root: @root).to_xml
   end
 
   private
