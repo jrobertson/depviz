@@ -33,9 +33,11 @@ class DepViz
     def reverse_dependencies()
 
       a = LineTree.new(@s, root: @root).to_doc.root.xpath('//' + @name)
-      
+
       s = a.select {|x| x.has_elements? }\
           .map{|x| XmlToSliml.new(x).to_s }.join("\n")
+
+      return if s.empty?
       
       dv3 = DepViz.new(root: nil)
       dv3.read s
