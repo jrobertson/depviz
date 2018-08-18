@@ -12,18 +12,31 @@ class DepViz
   
   class Item
     
-    def initialize(s, root: nil, name: name)
-      @s, @root, @name = s, root, name
+    def initialize(s, root: nil, name: name, debug: false)
+      @s, @root, @name, @debug = s, root, name, debug
     end
     
     def dependencies()
       
-      a = LineTree.new(@s, root: @root).to_doc.root.xpath('//' + @name)
+      if @debug then
+        puts 'inside DepViz::Item::dependencies'
+        puts '@s: ' + @s.inspect
+        puts '@root: ' + @root.inspect
+      end
       
-      s = a.map {|x| x.backtrack.to_s.split('/')[1..-1]}\
-          .map {|x| x.map.with_index {|y,i| '  ' * i + y }.join("\n")}\
+      a = LineTree.new(@s).to_doc.root.xpath('//' + @name)
+      puts 'dep: a: ' + a.inspect if @debug
+      
+      a2 = a.map do |x|
+        puts '  dependencies x: ' + x.inspect if @debug
+        x.backtrack.to_s.split('/')[1..-1]
+      end
+      puts 'a2: ' + a2.inspect if @debug
+      
+      s = a2.map {|x| x.map.with_index {|y,i| '  ' * i + y }.join("\n")}\
           .join("\n")
-      
+      puts 'child s: ' + s.inspect if @debug
+
       dv3 = DepViz.new()
       dv3.read s
       dv3
@@ -47,9 +60,9 @@ class DepViz
     
   end  
 
-  def initialize(s='', root: 'platform', style: default_stylesheet())
+  def initialize(s='', root: 'platform', style: default_stylesheet(), debug: false)
     
-    @style, @root = style, root
+    @style, @root, @debug = style, root, debug
     @header = "
 <?polyrex schema='items[type]/item[label]' delimiter =' # '?>
 type: digraph
@@ -68,7 +81,9 @@ type: digraph
   
   def item(name)
     
-    Item.new @s, root: @root, name: name
+    puts 'inside DepViz::item for ' + name.inspect if @debug
+    puts '_@s : ' + @s.inspect if @debug
+    Item.new @s, root: @root, name: name, debug: @debug
     
   end
   
