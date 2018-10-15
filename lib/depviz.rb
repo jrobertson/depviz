@@ -68,14 +68,9 @@ class DepViz
 type: digraph
 
     "
+        
+    build(s)    
     
-    return if s.empty?
-    
-    @s = tree = DependencyBuilder.new(s).to_s    
-    
-    s = root ? (root + "\n" + tree.lines.map {|x| '  ' + x}.join) : tree
-
-    @pxg = PxGraphViz.new(@header + s, style: style)
 
   end
   
@@ -105,7 +100,23 @@ type: digraph
 
   def to_xml()
     LineTree.new(@s, root: @root).to_xml
+  end  
+  
+  def build(s)
+    
+
+    return if s.empty?
+    
+    tree = DependencyBuilder.new(s).to_s    
+    
+    s3 = @root ? (@root + "\n" + tree.lines.map {|x| '  ' + x}.join) : tree
+
+    @pxg = PxGraphViz.new(@header + s3, style: @style)    
+    
+    tree
   end
+  
+  alias import build
 
   private
 
