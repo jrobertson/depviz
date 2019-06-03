@@ -76,7 +76,7 @@ class DepViz
       s = a.select {|x| x.has_elements? }\
           .map{|x| XmlToSliml.new(x).to_s }.join("\n")
 
-      return if s.empty?
+      return DepViz.new if s.empty?
       
       dv3 = DepViz.new(root: nil)
       dv3.read s
@@ -94,9 +94,14 @@ class DepViz
 type: digraph
 
     "      
-    @s = build(s)    
+    @s = build(s) unless s.nil? or s.empty? 
     
 
+  end
+  
+  def count()
+    return 0 unless @s
+    child_nodes.length
   end
   
   def item(name)
@@ -107,12 +112,22 @@ type: digraph
     
   end
   
+  def nodes()
+    
+    child_nodes.map {|x| x.name}.uniq
+    
+  end
+  
   def read(s)
     
     @s = s
     s2 = @root ? @root + "\n" + s.lines.map {|x| '  ' + x}.join : s
     @pxg = PxGraphViz.new(@header + s2, style: @style)
     
+  end
+  
+  def to_doc()
+    Rexle.new(LineTree.new(@s, root: @root).to_xml).root.elements.first
   end
 
   def to_s()
@@ -124,12 +139,11 @@ type: digraph
   end
 
   def to_xml()
-    LineTree.new(@s, root: @root).to_xml
+    to_doc.xml
   end  
   
   def build(s)
     
-
     return if s.empty?
     
     tree = DependencyBuilder.new(s).to_s    
@@ -144,6 +158,10 @@ type: digraph
   alias import build
 
   private
+  
+  def child_nodes()
+    to_doc.root.xpath('//*')
+  end
 
   def default_stylesheet()
 
