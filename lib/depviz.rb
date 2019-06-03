@@ -27,14 +27,38 @@ class DepViz
       a = LineTree.new(@s).to_doc.root.xpath('//' + @name)
       puts 'dep: a: ' + a.inspect if @debug
       
+      enclose = ->(a) do
+        a.length > 1 ? [a.first] << enclose.call(a[1..-1]) : a
+      end
+            
       a2 = a.map do |x|
         puts '  dependencies x: ' + x.inspect if @debug
-        x.backtrack.to_s.split('/')[1..-1]
+        enclose.call x.backtrack.to_s.split('/')[1..-1]
       end
+      
       puts 'a2: ' + a2.inspect if @debug
       
-      s = a2.map {|x| x.map.with_index {|y,i| '  ' * i + y }.join("\n")}\
-          .join("\n")
+      # group the items in order to merge branches with the same parent
+      a3 = a2.group_by(&:first)
+      a4 = a3.map {|x| [x.first] + x.last.map(&:last)}      
+            
+      treeize = ->(obj, indent=-2) do
+
+        if obj.is_a? Array then
+          
+          r = obj.map {|x| treeize.call(x, indent+1)}.join("\n")
+          puts 'r: ' + r.inspect if @debug
+          r
+
+        else
+
+          '  ' * indent + obj
+
+        end
+      end      
+      
+      s = treeize.call(a4)
+      
       puts 'child s: ' + s.inspect if @debug
 
       dv3 = DepViz.new()
@@ -43,6 +67,8 @@ class DepViz
       
     end
     
+    # returns a DepViz document
+    #
     def reverse_dependencies()
 
       a = LineTree.new(@s, root: @root).to_doc.root.xpath('//' + @name)
@@ -67,9 +93,8 @@ class DepViz
 <?polyrex schema='items[type]/item[label]' delimiter =' # '?>
 type: digraph
 
-    "
-        
-    build(s)    
+    "      
+    @s = build(s)    
     
 
   end
