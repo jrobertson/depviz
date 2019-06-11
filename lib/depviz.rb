@@ -8,7 +8,22 @@ require 'xml_to_sliml'
 require 'dependency_builder'
 
 
-class DepViz
+module RegGem
+
+  def self.register()
+'
+hkey_gems
+  doctype
+    depviz
+      require depviz
+      class DepViz
+      media_type svg
+'      
+  end
+end
+
+class DepViz < PxGraphViz
+  using ColouredText
   
   class Item
     
@@ -86,15 +101,50 @@ class DepViz
     
   end  
 
-  def initialize(s='', root: 'platform', style: default_stylesheet(), debug: false)
+  def initialize(s='',  fields: %w(label shape), delimiter: ' # ', 
+                 root: 'platform', style: nil, 
+                 debug: false, fill: '#ccffcc', stroke: '#999999', 
+                 text_color: '#330055')
     
     @style, @root, @debug = style, root, debug
     @header = "
 <?polyrex schema='items[type]/item[label]' delimiter =' # '?>
 type: digraph
 
-    "      
-    @s = build(s) unless s.nil? or s.empty? 
+    "
+    if s.length > 0 then 
+      
+      if s =~ /<?depviz / then
+          
+        raw_dv = s.clone
+        s2 = raw_dv.slice!(/<\?depviz [^>]+\?>/)
+
+        # attributes being sought =>  root fields delimiter id
+        attributes = Shellwords::shellwords(s).map {|x| key, 
+                          value = x.split(/=/, 2); [key.to_sym, value]}.to_h
+        
+        h = {
+          fields: fields.join(', '), 
+          delimiter: delimiter
+        }.merge attributes          
+
+        s = if h[:root] then
+          "\n\n" + h[:root] + "\n" + 
+            raw_dv.strip.lines.map {|line| '  ' + line}.join
+        else
+          raw_dv
+        end
+        
+        delimiter = h[:delimiter]
+        fields = h[:fields].split(/ *, */)
+
+      end            
+    
+      @s = tree = DependencyBuilder.new(s).to_s          
+      s3 = @root ? (@root + "\n" + tree.lines.map {|x| '  ' + x}.join) : tree
+      @pxg = super(@header + s3, style: @style)      
+      
+    end
     
 
   end
@@ -132,30 +182,11 @@ type: digraph
 
   def to_s()
     @s
-  end
-  
-  def to_svg()
-    @pxg.to_svg
-  end
+  end  
 
   def to_xml()
     to_doc.xml
-  end  
-  
-  def build(s)
-    
-    return if s.empty?
-    
-    tree = DependencyBuilder.new(s).to_s    
-    
-    s3 = @root ? (@root + "\n" + tree.lines.map {|x| '  ' + x}.join) : tree
-
-    @pxg = PxGraphViz.new(@header + s3, style: @style)    
-    
-    tree
-  end
-  
-  alias import build
+  end        
 
   private
   
