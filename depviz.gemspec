@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'depviz'
-  s.version = '0.5.2'
+  s.version = '0.5.3'
   s.summary = 'Generates a complete dependency tree from disparate ' + 
       'dependencies to an SVG document.'
   s.authors = ['James Robertson']
